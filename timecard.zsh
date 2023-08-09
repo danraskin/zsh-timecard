@@ -1,125 +1,84 @@
 #!/usr/bin/env zsh
 
-# Initialize variables
-typeset -A start_times
-typeset -A total_times
-typeset -A task_times  # Add task_times associative array
-
+typeset -A project_start_times
+typeset -A project_total_times
 CSV_FILE="timetracker.csv"
 
 # Function to read data from CSV file
 function read_csv_data {
   if [[ -f "$CSV_FILE" ]]; then
-    csvcut -c project,task,start_time,stop_time "$CSV_FILE"
-    echo "$CSV_FILE exists"
- 
+    csvcut -c project,start_time,stop_time "$CSV_FILE"
   fi
 }
 
-# project='projtest'
-# task='tasktest'
-
-# read_csv_data
-# echo ${(t)task_times} # prints type
-# task_times["$task"]='learn bash'
-# task_times["$project"]='write timecard script'
-# task_times["$project:$task"]='not sure what goes here'
-# echo $task_times["$project"]
-# echo $task_times["$project:$task"]
-
-
-# # Function to write data to the CSV file
-# function write_csv_data {
-#   echo "project,task,start_time,stop_time" > "$CSV_FILE"
-#   for proj_task in ${(k)task_times}; do
-#     project=${(s:,:)proj_task}
-#     task=${(s,:,)proj_task}
-#     echo "$project,$task,${start_times[$task]},${total_times[$task]}" >> "$CSV_FILE"
-#   done
-# }
+# Function to write data to the CSV file
+function write_csv_data {
+  echo "project,start_time,stop_time" > "$CSV_FILE"
+  for project in ${(k)project_start_times}; do
+    echo "$project,${project_start_times[$project]},${project_total_times[$project]}" >> "$CSV_FILE"
+  done
+}
 
 # Load existing data from CSV file, if it exists
 IFS=,
-while read -r project task start_time stop_time; do
-  task_times["$project:$task"]=$start_time  # Store the key in "project:task" format
-  start_times["$task"]=$start_time
-  total_times["$task"]=$stop_time
-
-done < <(read_csv_data) #process substitution syntax. runs function in subshell and redirects output to while loop. how? idk!
+while read -r project start_time stop_time; do
+  project_start_times["$project"]=$start_time
+  project_total_times["$project"]=$stop_time
+done < <(read_csv_data)
 unset IFS
 
-# # Parse command-line arguments
-# project=""
-# task=""
+# Initialize the program
+echo "Time Tracker"
+echo "Initialized."
 
-# # this manually parses command-line arguments
+# Process user commands
+while true; do
+  echo "Enter project name (-prj project), 'print', or 'quit': "
+  read command
 
-# #iterates over cl arguments if >0.
-# while [[ $# -gt 0 ]]; do
-#   case "$1" in
-#     -p|--project)
-#       project="$2"
-#       shift
-#       shift
-#       ;;
-#     -t|--task)
-#       task="$2"
-#       shift
-#       shift
-#       ;;
-#     *)
-#       break
-#       ;;
-#   esac
-# done
+  if [[ "$command" == "quit" ]]; then
+    write_csv_data
+    echo "Exiting..."
+    exit 0
+  elif [[ "$command" =~ ^-prj ]]; then
+    project=${command#-prj }  # Extract project name from input
+    echo "To begin work on $project, enter 'start'"
+    read start_input
 
-# # Check if project and task are provided
-# if [[ -z $project ]]; then
-#   echo "Please specify a project using the -p or --project flag."
-#   exit 1
-# fi
+    if [[ "$start_input" == "start" ]]; then
+      start_time=$(date -u +%s)
+      project_start_times["$project"]=$start_time
+      echo "Started tracking work on $project. start time is $start_time. project start times array is ${project_start_times["$project"]}"
+    fi
+  elif [[ "$command" == "print" ]]; then
+    echo "Enter project name: "
+    read -r project
+    if [[ -n ${project_start_times["$project"]} ]]; then
+      echo "Start time for $project: ${project_start_times["$project"]}"
+    else
+      echo "No active tracking found for $project."
+    fi
+  else
+    echo "Invalid input."
+  fi
 
-# if [[ -z $task ]]; then
-#   echo "Please specify a task using the -t or --task flag."
-#   exit 1
-# fi
+  echo "Enter 'stop' to stop work on $project, or 'print' to print time: "
+  read stop_input
 
-# # Process commands
-# while [[ $# -gt 0 ]]; do
-#   case "$1" in
-#     start)
-#       start_times[$task]=$(date +%s)
-#       echo "Started tracking task '$task' for project '$project'."
-#       echo "start time is $start_times[$task]"
-#       echo "start_times is $start_times"
-#       ;;
-#     stop)
-#       if [[ -z ${start_times[$task]} ]]; then
-#         echo "No active tracking found for task '$task' in project 
-# '$project'."
-#       else
-#         start_time=${start_times[$task]}
-#         end_time=$(date +%s)
-#         elapsed=$((end_time - start_time))
-#         total_times[$task]=$((total_times[$task] + elapsed))
-#         unset start_times[$task]
-#         echo "Stopped tracking task '$task' for project '$project'."
-#         echo "Total time spent on task '$task': $((total_times[$task])) 
-# seconds."
-#       fi
-#       ;;
-#     print)
-#       if [[ -z ${total_times[$task]} ]]; then
-#         echo "No time tracked for task '$task' in project '$project'."
-#       else
-#         echo "Total time spent on task '$task' for project '$project': 
-# $((total_times[$task])) seconds."
-#       fi
-#       ;;
-#     *)
-#       echo "Invalid command: $1"
-#       exit 1
-#       ;;
-#   esac
-#   shift
-# done
+  if [[ "$stop_input" == "stop" ]]; then
+    echo "project start times: ${project_start_times["$project"]}"
+    if [[ -n ${project_start_times["$project"]} ]]; then
+      stop_time=$(date -u +%s)
+      elapsed=$((stop_time - $project_start_times["$project"]))
+      project_total_times["$project"]=$((project_total_times["$project"] + elapsed))
+      unset $project_start_times["$project"]
+      echo "Stopped tracking work on $project."
+    else
+      echo "No active tracking found for $project."
+    fi
+  elif [[ "$stop_input" == "print" ]]; then
+    echo "Total time spent on $project: ${project_total_times["$project"]} seconds."
+  else
+    echo "Invalid input."
+  fi
+done
