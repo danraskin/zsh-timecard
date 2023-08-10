@@ -1,29 +1,41 @@
 #!/usr/bin/env zsh
 
-typeset -A project_start_times
-typeset -A project_total_times
+
+declare -A project_start_times
+declare -A project_total_times
 CSV_FILE="timetracker.csv"
+highest_index=0
 
 # Function to read data from CSV file
 function read_csv_data {
   if [[ -f "$CSV_FILE" ]]; then
-    csvcut -c project,start_time,stop_time "$CSV_FILE"
+    csvcut -c index,project,start_time,stop_time "$CSV_FILE"
   fi
 }
 
 # Function to write data to the CSV file
 function write_csv_data {
-  echo "project,start_time,stop_time" > "$CSV_FILE"
-  for project in ${(k)project_start_times}; do
-    echo "$project,${project_start_times[$project]},${project_total_times[$project]}" >> "$CSV_FILE"
-  done
+  index=$((highest_index + 1))
+  # echo "index,project,start_time,stop_time" > "$CSV_FILE"
+  echo "$index,$project,$start_time,$stop_time" >> "$CSV_FILE"
+  (( index++ ))
+  # for project in ${(k)project_start_times}; do
+  #   for start_time in ${(P)project_start_times[$project]}; do
+  #     stop_time=${project_total_times["$index:$project:$start_time"]:-}
+  #     echo "$index,$project,$start_time,$stop_time" >> "$CSV_FILE"
+  #     (( index++ ))
+  #   done
+  # done
 }
 
 # Load existing data from CSV file, if it exists
 IFS=,
-while read -r project start_time stop_time; do
-  project_start_times["$project"]=$start_time
-  project_total_times["$project"]=$stop_time
+while read -r index project start_time stop_time; do
+  project_start_times["$index:$project"]=$start_time
+  project_total_times["$index:$project"]=$stop_time
+  if (( index > highest_index )); then
+    highest_index=$index
+  fi
 done < <(read_csv_data)
 unset IFS
 
@@ -37,7 +49,6 @@ while true; do
   read command
 
   if [[ "$command" == "quit" ]]; then
-    write_csv_data
     echo "Exiting..."
     exit 0
   elif [[ "$command" =~ ^-prj ]]; then
@@ -51,28 +62,21 @@ while true; do
       echo "Started tracking work on $project. start time is $start_time. project start times array is ${project_start_times["$project"]}"
     fi
   elif [[ "$command" == "print" ]]; then
-    echo "Enter project name: "
-    read -r project
-    if [[ -n ${project_start_times["$project"]} ]]; then
-      echo "Start time for $project: ${project_start_times["$project"]}"
-    else
-      echo "No active tracking found for $project."
-    fi
+    print_project_times
   else
     echo "Invalid input."
   fi
+  
 
   echo "Enter 'stop' to stop work on $project, or 'print' to print time: "
   read stop_input
 
   if [[ "$stop_input" == "stop" ]]; then
-    echo "project start times: ${project_start_times["$project"]}"
     if [[ -n ${project_start_times["$project"]} ]]; then
       stop_time=$(date -u +%s)
-      elapsed=$((stop_time - $project_start_times["$project"]))
-      project_total_times["$project"]=$((project_total_times["$project"] + elapsed))
-      unset $project_start_times["$project"]
       echo "Stopped tracking work on $project."
+      write_csv_data
+      echo "written to timetracker.csv"
     else
       echo "No active tracking found for $project."
     fi
