@@ -1,15 +1,30 @@
 #!/usr/bin/env zsh
 
-
 declare -A project_start_times
 declare -A project_total_times
 CSV_FILE="timetracker.csv"
 highest_index=0
 
+# generate unicode
+# function generate_unicode_char {
+#   echo -e "\U$((0x1F600 + RANDOM % 50))"
+# }
+
 # Function to read data from CSV file
 function read_csv_data {
   if [[ -f "$CSV_FILE" ]]; then
     csvcut -c index,project,start_time,stop_time "$CSV_FILE"
+  fi
+}
+
+# U+10348
+# function to display prompt
+## -n is a test operator. true if length of string is non-zero. -z true if length is zero
+function set_prompt {
+  if [[ -n $project ]]; then
+    echo -n "\U10348 -> [$project] "
+  else
+    echo -n "\U10348 -> [ ] "
   fi
 }
 
@@ -33,42 +48,51 @@ IFS=,
 while read -r index project start_time stop_time; do
   project_start_times["$index:$project"]=$start_time
   project_total_times["$index:$project"]=$stop_time
-  if (( index > highest_index )); then
+  if (( index >= highest_index )); then
     highest_index=$index
   fi
 done < <(read_csv_data)
 unset IFS
 
+
 # Initialize the program
 echo "Time Tracker"
-echo "Initialized."
+
+# Hook the function to the 'precmd' hook, which runs before each prompt display
+# autoload -U add-zsh-hook
+# add-zsh-hook precmd set_prompt
+
 
 # Process user commands
 while true; do
-  echo "Enter project name (-prj project), 'print', or 'quit': "
+  echo "Enter project name (-p project) or 'quit': "
+  set_prompt
   read command
 
   if [[ "$command" == "quit" ]]; then
     echo "Exiting..."
     exit 0
-  elif [[ "$command" =~ ^-prj ]]; then
-    project=${command#-prj }  # Extract project name from input
+  elif [[ "$command" =~ ^-p ]]; then
+    project=${command#-p }  # Extract project name from input
     echo "To begin work on $project, enter 'start'"
+    set_prompt
     read start_input
 
     if [[ "$start_input" == "start" ]]; then
       start_time=$(date -u +%s)
       project_start_times["$project"]=$start_time
-      echo "Started tracking work on $project. start time is $start_time. project start times array is ${project_start_times["$project"]}"
+      # echo "Started tracking work on $project. start time is $start_time. project start times array is ${project_start_times["$project"]}"
     fi
   elif [[ "$command" == "print" ]]; then
     print_project_times
   else
     echo "Invalid input."
+    set_prompt
   fi
   
 
   echo "Enter 'stop' to stop work on $project, or 'print' to print time: "
+  set_prompt
   read stop_input
 
   if [[ "$stop_input" == "stop" ]]; then
@@ -82,7 +106,9 @@ while true; do
     fi
   elif [[ "$stop_input" == "print" ]]; then
     echo "Total time spent on $project: ${project_total_times["$project"]} seconds."
+    set_prompt
   else
     echo "Invalid input."
+    set_prompt
   fi
 done
