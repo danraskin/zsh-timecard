@@ -48,8 +48,9 @@ IFS=,
 while read -r index project start_time stop_time; do
   project_start_times["$index:$project"]=$start_time
   project_total_times["$index:$project"]=$stop_time
-  if (( index >= highest_index )); then
+  if  [[ index =~ ^[0-9]+$ && (( index > highest_index )) ]] ; then
     highest_index=$index
+    echo $index $highest_index
   fi
 done < <(read_csv_data)
 unset IFS
