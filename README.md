@@ -13,7 +13,7 @@ cd /path/to/cloned/repo/
 # make timetracker executable
 chmod +x timetracker.zsh
 
-# create symlink in a PATH directory
+# create symlink in a PATH directory using absolute filepath to timetracker.zsh from ROOT
 ln -s /full/path/to/cloned/repo/timetracker.zsh /usr/local/bin/timetracker
 
 ```
