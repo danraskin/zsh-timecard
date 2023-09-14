@@ -40,9 +40,17 @@ function load_csv_data {
 ## -n is a test operator. true if length of string is non-zero. -z true if length is zero
 function set_prompt {
   if [[ (-n $project_current[prj_name]) && (-n $project_current[task]) ]]; then
-    echo -n "\U10348 -> ["${project_current[prj_name]}"]["${project_current[task]}"] "
+    if [[ -n $project_current[start_time] && -z $project_current[stop_time] ]]; then
+      echo -n "\e[0;36m\U10348 ->\e[0m  -> ["${project_current[prj_name]}"]["${project_current[task]}"] "
+    else
+      echo -n "\U10348 -> ["${project_current[prj_name]}"]["${project_current[task]}"] "
+    fi
   elif [[ (-n $project_current[prj_name]) && (-z $project_current[task]) ]]; then
-    echo -n "\U10348 -> ["${project_current[prj_name]}"][ ] "
+    if [[ -n $project_current[start_time] && -z $project_current[stop_time] ]]; then
+      echo -n "\e[0;36m\U10348 ->\e[0m ["${project_current[prj_name]}"][ ] "
+    else
+      echo -n "\U10348 -> ["${project_current[prj_name]}"][ ] "
+    fi
   else
     echo -n "\U10348 -> [ ][ ] "
   fi
@@ -53,41 +61,42 @@ function write_csv_data {
   index=$((highest_index + 1))
   date=$(date -u +%Y-%m-%d)
   echo "$index,$date,$project_current[prj_name],$project_current[task],$project_current[start_time],$project_current[stop_time]" >> "$CSV_FILE"
-  (( index++ ))
+  (( highest_index++ ))
   project_current[start_time]=""
   project_current[stop_time]=""
-  echo "writing. $project_current"
 }
 
 function cmd_print {
-
-  if [[ ($command == "print") && (-z $project_current[prj_name]) ]]; then
-    echo "chose project to print"
-    return
-  elif [[ ($command == "print") && (-n $project_current[prj_name]) ]]; then
-    designated_project=$project_current[prj_name]
-  elif [[ -n ${command#print } ]]; then
-    designated_project=${command#print }
-  fi
-
   declare -A task_times  # Associative array to store task times
   total_project_time=0
 
-  if [[ (-n $project_current[start_time]) && (-z $project_current[stop_time]) ]]; then
-    echo "Cannot print total time while a project is active. Please stop the project first."
-  else
     while IFS=, read -r index date project task start_time stop_time; do
-      if [[ $project == $designated_project && -n $start_time && -n $stop_time ]]; then
-        start_timestamp=$(date -r "$start_time" +%s)
-        stop_timestamp=$(date -r "$stop_time" +%s)
-        duration=$((stop_timestamp - start_timestamp))
-        total_project_time=$((total_project_time + duration))
+      if [[ ($command == "print") ]]; then
+        if [[ $index =~ ^[0-9]+$ ]]; then
+          start_timestamp=$(date -r "$start_time" +%s)
+          stop_timestamp=$(date -r "$stop_time" +%s)
+          duration=$((stop_timestamp - start_timestamp))
+          total_project_time=$((total_project_time + duration))
 
-        # Update task times
-        if [[ -n $task ]]; then
-          (( task_times[$task] += duration ))
-        else
-          (( task_times[$designated_project] += duration ))
+          # Update task times
+          if [[ -n $project ]]; then
+            (( task_times[$project] += duration ))
+          fi
+        fi
+      elif [[ -n ${command#print } ]]; then
+        designated_project=${command#print }
+        if [[ $project == $designated_project && -n $start_time && -n $stop_time ]]; then
+          start_timestamp=$(date -r "$start_time" +%s)
+          stop_timestamp=$(date -r "$stop_time" +%s)
+          duration=$((stop_timestamp - start_timestamp))
+          total_project_time=$((total_project_time + duration))
+
+          # Update task times
+          if [[ -n $task ]]; then
+            (( task_times[$task] += duration ))
+          else
+            (( task_times[$designated_project] += duration ))
+          fi
         fi
       fi
     done < <(read_csv_data)
@@ -98,15 +107,19 @@ function cmd_print {
 
     # Print task-wise times in a table
     for task in ${(k)task_times}; do
-      printf "%-10s | %-10s | %-10d\n" "$designated_project" "$task" "$task_times[$task]"
+      if [[ -n $designated_project ]]; then
+        printf "%-10s | %-10s | %02dh:%02dm\n" "$designated_project" "$task" $((task_times[$task] / 3600)) $((task_times[$task] % 3600 / 60)) 
+      else
+        printf "%-10s | %-10s | %02dh:%02dm\n" "$task" "" $((task_times[$task] / 3600)) $((task_times[$task] % 3600 / 60)) 
+      fi
     done
 
     # Print total project time
     printf "-----------|------------|----------\n"
-    printf "%-23s | %-10d\n" "Total Project Time" "$total_project_time"
+    printf "%-23s | %02dh:%02dm\n" "Total Project Time" $((total_project_time / 3600)) $((total_project_time % 3600 / 60)) 
     printf "-----------------------------------\n"
     
-  fi
+  # fi
 }
 
 function cmd_quit {
@@ -115,7 +128,6 @@ function cmd_quit {
 }
 
 function cmd_set_proj {
-  # echo $project_current[@]
   if [[ (-n $project_current[start_time]) && (-z $project_current[stop_time]) ]]; then
     echo "stop current project? Y/n"
     while true; do
@@ -124,7 +136,7 @@ function cmd_set_proj {
         [yY])
           cmd_stop
           project_current[prj_name]=${command#-p }  # Extract project name from input
-          echo "To begin work on $project_current, enter 'start'"
+          echo "To begin work on $project_current[prj_name], enter 'start'"
           break
         ;;
         [nN])
@@ -137,7 +149,7 @@ function cmd_set_proj {
     done
   else 
     project_current[prj_name]=${command#-p }  # Extract project name from input
-    echo "To begin work on $project_current, enter 'start'"
+    echo "To begin work on $project_current[prj_name], enter 'start'"
   fi
 }
 
@@ -145,7 +157,6 @@ function cmd_start {
   if [[ (-n $project_current[prj_name]) && (-z $project_current[start_time]) ]]; then
     start_time=$(date -u +%s)
     project_current[start_time]=$start_time
-    echo "project start time is: $project_current[start_time]"
   elif [[ -n $project_current[start_time] ]]; then
     echo "time is already being tracked"
   elif [[ -z $project_current[prj_name] ]]; then
@@ -154,11 +165,10 @@ function cmd_start {
 }
 
 function cmd_stop {
-  # echo ${(@k)project_start_times}
   if [[ (-n $project_current[start_time]) ]]; then
       stop_time=$(date -u +%s)
       project_current[stop_time]=$stop_time
-      echo "Stopped tracking work on $project_current[prj_name]"
+      echo "Stopped tracking $project_current[prj_name]"
       write_csv_data
     else
       echo "No active tracking found for $project_current[prj_name]."
@@ -169,10 +179,7 @@ load_csv_data
 
 # Process user commands
 while true; do
-  # echo "project_start_times are: ${(@k)project_start_times}"
-  # load_csv_data
-  # echo $project_start_times
-  echo "Enter project name (-p project) or 'quit': "
+
   set_prompt
   read command
 
@@ -181,15 +188,19 @@ while true; do
       cmd_quit
     ;;
     "-p "*)
+      clear
       cmd_set_proj
     ;;
     "start")
+      clear
       cmd_start
     ;;
     "stop")
+      clear
       cmd_stop
     ;;
     "print"*)
+      clear
       cmd_print
     ;;
     *)
@@ -198,25 +209,3 @@ while true; do
   esac
   
 done
-
-
-
-# while getopts ":p:P:q:s:S:" arg; do
-#   case $arg in
-#   p)
-#     project=$OPTARG
-#     echo "p is $project";;
-#   P)
-#     echo "P is print $OPTARG";;
-#   q)
-#     echo "exiting..."; exit 0;;
-#   s)
-#     echo "${project} starting";;
-#   S)
-#     echo "${project} stopping";;
-#   \?)
-#     echo "invalid optoin: -$OPTARG"; exit 1;;
-#   esac
-# done
-
-# shift $((OPTIND -1))
