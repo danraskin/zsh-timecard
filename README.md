@@ -14,13 +14,13 @@ chmod +x timetracker.zsh
 
 ## Usage: timetracker [OPTIONS]
 
--  -p PROJECT  Start tracking a project
--  -t TASK     Start tracking a task (must be used with -p)
--  -pt PROJECT Start tracking a project and task
--  start       Start tracking time for the current project/task
--  stop        Stop tracking time for the current project/task
--  print       Print work history
--  help, -h    Show this help message
+- **[-p PROJECT]**  Start tracking a project
+- **[-t TASK]**     Start tracking a task (must be used with -p)
+- **[-pt PROJECT]** Start tracking a project and task
+- **[start]**       Start tracking time for the current project/task
+- **[stop]**        Stop tracking time for the current project/task
+- **[print]**       Print work history
+- **[help, -h]**    Show this help message
 
 ## Notes
 
