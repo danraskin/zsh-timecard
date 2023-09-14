@@ -1,9 +1,34 @@
 #!/usr/bin/env zsh
 
+# set config
+set_config () {
+  if [[ -f config.txt ]]; then
+    source config.txt
+  else
+    echo "<- \U10348 TIMETRACKER \U10348 ->"
+    echo "Configure filepath. Enter absolute path Timetracker directory from root:"
+    echo "( e.g. /Users/username/Documents/zsh-timetracker/ )"
+    read input
+    if [[ -d "$input" ]]; then
+      if [[ "${input: -1}" == "/" ]]; then
+        echo "CSV_FILE=${input}timetracker.csv" > config.txt
+      else
+        echo "CSV_FILE=${input}/timetracker.csv" > config.txt
+      fi
+      source config.txt
+    else
+      echo "Invalid file path. The file does not exist."
+      exit 1
+    fi
+  fi
+}
+
+set_config
+
 # declarations
 declare -A project_current
 project_current=(prj_name "" task "" start_time "" stop_time "" break_times "")
-CSV_FILE="timetracker.csv"
+# CSV_FILE="timetracker.csv"
 highest_index=0
 
 # Functions
@@ -12,6 +37,11 @@ highest_index=0
 write_csv_data () {
   index=$((highest_index + 1))
   date=$(date -u +%Y-%m-%d)
+
+  if [[ ! -f $CSV_FILE ]]; then
+    echo "index,date,project,task,start_time,stop_time" > "$CSV_FILE"
+  fi
+  
   echo "$index,$date,$project_current[prj_name],$project_current[task],$project_current[start_time],$project_current[stop_time]" >> "$CSV_FILE"
   (( highest_index++ ))
   project_current[start_time]=""
@@ -176,7 +206,7 @@ load_csv_index () {
 }
 
 load_csv_index
-clear
+# clear
 echo "<- \U10348 TIMETRACKER \U10348 ->"
 echo "To set a project, use -p PROJECT. For help, type -H"
 # Process user commands
