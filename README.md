@@ -1,17 +1,27 @@
-# Zsh Timecard
+# Zsh Timetracker
 
-I've been attempting to keep track of my time spent on various projects, 
-using a google spreadsheet. This is plenty efficient and easy for me to 
-use, but I got curious: could I write a simple Zsh script to do this for 
-me?
+A simple command-line utility for tracking time spent on different projects. It provides basic reporting capabilities.
 
-at its simplest, all i'd do is specify the project, and submit 'start' and 
-'stop' as inputs. 'print' would  output a table of total time 
-spent on each project.
+## Installation
 
-i have limited experience writing Zsh script, and thought this might also 
-be a good opportunity to test the ever-popular ChatGPT as a learning tool. 
-i submitted my project parameters into chatGPT, and it gave me a raw 
-script. It is not fucntional yet, but it provided me opportunity to ask 
-questions about basic Bash syntax. I'll be continuing to improve this, 
-relying partially on chat gpt. 
+```bash
+git clone https://github.com/danraskin/zsh-timetracker.git
+
+cd timetracker
+
+chmod +x timetracker.zsh
+```
+
+## Usage: timetracker [OPTIONS]
+
+-  -p PROJECT  Start tracking a project
+-  -t TASK     Start tracking a task (must be used with -p)
+-  -pt PROJECT Start tracking a project and task
+-  start       Start tracking time for the current project/task
+-  stop        Stop tracking time for the current project/task
+-  print       Print work history
+-  help, -h    Show this help message
+
+## Notes
+
+I've been attempting to keep track of my time spent on various projects using Google Sheet. This met my needs, but I got curious: could I write a script to do this for me? I took this as an opportunity to try two new things: Learning shell scripting and gaining experience using ChatGPT and other AI tools as learning/productivity tools. The first iterations of the script were the outputs of ChatGPT prompts. Subsequent iterations were developed using further ChatGPT prompts, [Zsh documentation](https://zsh.sourceforge.io/Doc/Release/) and other online resources. More reflections on this process can be read [here](https://danraskin-portfolio.vercel.app/blog)
