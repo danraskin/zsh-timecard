@@ -2,42 +2,30 @@
 
 # FUNCTIONS
 
-# sets config file
-set_config () {
-  if [[ -f config.txt ]]; then
-    source config.txt
-  else
-    echo "<- \U10348 TIMETRACKER \U10348 ->"
-    echo "Configure filepath. Enter absolute path Timetracker directory from root:"
-    echo "( e.g. /Users/username/Documents/zsh-timetracker/ )"
-    read input
-    if [[ -d "$input" ]]; then
-      if [[ "${input: -1}" == "/" ]]; then
-        echo "CSV_FILE=${input}timetracker.csv" > config.txt
-      else
-        echo "CSV_FILE=${input}/timetracker.csv" > config.txt
-      fi
-      source config.txt
-    else
-      echo "Invalid file path. The file does not exist."
-      exit 1
-    fi
-  fi
-}
-
 # Function to write data to the CSV file
 write_csv_data () {
   index=$((highest_index + 1))
   date=$(date -u +%Y-%m-%d)
-
-  if [[ ! -f $CSV_FILE ]]; then
-    echo "index,date,project,task,start_time,stop_time" > "$CSV_FILE"
-  fi
   
   echo "$index,$date,$project_current[prj_name],$project_current[task],$project_current[start_time],$project_current[stop_time]" >> "$CSV_FILE"
   (( highest_index++ ))
   project_current[start_time]=""
   project_current[stop_time]=""
+}
+
+# initial load of CSV file
+load_csv () {
+  # check if timetracker.csv exists
+  if [[ ! -f $CSV_FILE ]]; then
+    echo "index,date,project,task,start_time,stop_time" > "$CSV_FILE"
+  fi
+
+  # sets index
+  tail -n +2 "$CSV_FILE" | while IFS=, read -r index date; do
+    if  [[ (( index > highest_index )) ]] ; then
+      highest_index=$index
+    fi
+  done
 }
 
 # sets display prompt
@@ -110,27 +98,22 @@ cmd_print () {
   done
 
   # Print table header
-  printf "%-10s | %-10s | %-10s\n" "Project" "Task" "Time"
-  printf "-----------|------------|----------\n"
+  printf "%-20s | %-20s | %-10s\n" "Project" "Task" "Time"
+  printf "---------------------|----------------------|----------\n"
 
   # Print task-wise times in a table
   for task in ${(k)task_times}; do
     if [[ -n $designated_project ]]; then
-      printf "%-10s | %-10s | %02dh:%02dm\n" "$designated_project" "$task" $((task_times[$task] / 3600)) $((task_times[$task] % 3600 / 60)) 
+      printf "%-20s | %-20s | %02dh:%02dm\n" "$designated_project" "$task" $((task_times[$task] / 3600)) $((task_times[$task] % 3600 / 60)) 
     else
-      printf "%-10s | %-10s | %02dh:%02dm\n" "$task" "" $((task_times[$task] / 3600)) $((task_times[$task] % 3600 / 60)) 
+      printf "%-20s | %-20s | %02dh:%02dm\n" "$task" "" $((task_times[$task] / 3600)) $((task_times[$task] % 3600 / 60)) 
     fi
   done
 
   # Print total project time
-  printf "-----------|------------|----------\n"
-  printf "%-23s | %02dh:%02dm\n" "Total Project Time" $((total_project_time / 3600)) $((total_project_time % 3600 / 60)) 
-  printf "-----------------------------------\n"
-}
-
-cmd_quit () {
-  echo "Exiting..."
-  exit 0
+  printf "---------------------|----------------------|----------\n"
+  printf "%-43s | %02dh:%02dm\n" "Total Project Time" $((total_project_time / 3600)) $((total_project_time % 3600 / 60)) 
+  printf "--------------------------------------------------------\n"
 }
 
 # user input sets project and task
@@ -189,29 +172,22 @@ cmd_stop () {
   fi
 }
 
-# initial load of CSV file
-load_csv () {
-  # check if timetracker.csv exist
-  if [[ ! -f "$CSV_FILE" ]]; then
-    echo "index,date,project,task,start_time,stop_time" > "$CSV_FILE"
-  fi
-  # sets index
-  tail -n +2 "$CSV_FILE" | while IFS=, read -r index date; do
-    if  [[ (( index > highest_index )) ]] ; then
-      highest_index=$index
-    fi
-  done
+cmd_quit () {
+  echo "Exiting..."
+  exit 0
 }
 
 ## TIMETRACKER SCRIPT RUN
 
 # declarations
+script_dir="$(dirname "$0")"
+# echo "directory: $script_dir ${script_dir}/config.txt"
+CSV_FILE=${script_dir}/timetracker.csv
 declare -A project_current
 project_current=(prj_name "" task "" start_time "" stop_time "" break_times "")
 highest_index=0
 
 # initial functions
-set_config
 load_csv
 clear
 echo "<- \U10348 TIMETRACKER \U10348 ->"
