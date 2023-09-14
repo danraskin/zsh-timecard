@@ -1,6 +1,8 @@
 #!/usr/bin/env zsh
 
-# set config
+# FUNCTIONS
+
+# sets config file
 set_config () {
   if [[ -f config.txt ]]; then
     source config.txt
@@ -23,16 +25,6 @@ set_config () {
   fi
 }
 
-set_config
-
-# declarations
-declare -A project_current
-project_current=(prj_name "" task "" start_time "" stop_time "" break_times "")
-# CSV_FILE="timetracker.csv"
-highest_index=0
-
-# Functions
-
 # Function to write data to the CSV file
 write_csv_data () {
   index=$((highest_index + 1))
@@ -48,9 +40,7 @@ write_csv_data () {
   project_current[stop_time]=""
 }
 
-# U+10348
-# function to display prompt
-## -n is a test operator. true if length of string is non-zero. -z true if length is zero
+# sets display prompt
 set_prompt () {
   if [[ (-n $project_current[prj_name]) && (-n $project_current[task]) ]]; then
     if [[ -n $project_current[start_time] && -z $project_current[stop_time] ]]; then
@@ -83,6 +73,7 @@ cmd_help () {
 
 }
 
+# prints time log
 cmd_print () {
 
   local args=(${(s: :)1})
@@ -142,6 +133,7 @@ cmd_quit () {
   exit 0
 }
 
+# user input sets project and task
 cmd_set_proj () {
   local args=(${(s: :)1})
 
@@ -197,7 +189,13 @@ cmd_stop () {
   fi
 }
 
-load_csv_index () {
+# initial load of CSV file
+load_csv () {
+  # check if timetracker.csv exist
+  if [[ ! -f "$CSV_FILE" ]]; then
+    echo "index,date,project,task,start_time,stop_time" > "$CSV_FILE"
+  fi
+  # sets index
   tail -n +2 "$CSV_FILE" | while IFS=, read -r index date; do
     if  [[ (( index > highest_index )) ]] ; then
       highest_index=$index
@@ -205,10 +203,20 @@ load_csv_index () {
   done
 }
 
-load_csv_index
-# clear
+## TIMETRACKER SCRIPT RUN
+
+# declarations
+declare -A project_current
+project_current=(prj_name "" task "" start_time "" stop_time "" break_times "")
+highest_index=0
+
+# initial functions
+set_config
+load_csv
+clear
 echo "<- \U10348 TIMETRACKER \U10348 ->"
 echo "To set a project, use -p PROJECT. For help, type -H"
+
 # Process user commands
 while true; do
 
