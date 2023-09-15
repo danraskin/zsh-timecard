@@ -60,7 +60,7 @@ cmd_help () {
   echo "  print [PROJECT]  Display project work history"
   echo "  help, -h         Display this help message"
   echo "  quit, q, -q      Exit Timetracker"
-  echo "  Enter            Exit print or help display"
+  echo "  ENTER key        Exit print or help display"
 
   read input
   if [[ $input == "" ]]; then
