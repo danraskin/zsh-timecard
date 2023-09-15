@@ -193,7 +193,7 @@ highest_index=0
 
 # initial functions
 load_csv
-# clear
+clear
 echo "<- \U10348 TIMETRACKER \U10348 ->"
 echo "To set a project, use -p PROJECT. For help, type -H"
 
