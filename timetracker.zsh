@@ -168,7 +168,7 @@ cmd_start () {
   if [[ (-n $project_current[prj_name]) && (-z $project_current[start_time]) ]]; then
     start_time=$(date -u +%s)
     project_current[start_time]=$start_time
-    prompt_text="To stop tracking project_current[prj_name], enter 'stop'"
+    prompt_text="To stop tracking $project_current[prj_name], enter 'stop'"
   elif [[ -n $project_current[start_time] ]]; then
     prompt_text="$project_current[prj_name] is already being tracked"
   elif [[ -z $project_current[prj_name] ]]; then
