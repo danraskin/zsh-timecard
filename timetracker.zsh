@@ -204,7 +204,7 @@ script_dir="$(dirname "$script_path")"
 CSV_FILE="${script_dir}/timetracker.csv"
 
 header="                 <- \U10348 TIMETRACKER \U10348 ->\n-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-"
-prompt_text="To set a project, use -p PROJECT. For help, type -H"
+prompt_text="To set a project, use -p PROJECT. For help, type -h"
 declare -A project_current=(prj_name "" task "" start_time "" stop_time "" break_times "")
 highest_index=0 #index provides no real function anymore
 
