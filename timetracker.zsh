@@ -49,6 +49,7 @@ set_prompt () {
 
 cmd_help () {
   echo "Timetracker \U10348 -> A simple time tracking script"
+  echo "-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-"
   echo "Usage: timetracker [OPTIONS]"
   echo "Options:"
   echo "  -p PROJECT  Start tracking a project"
@@ -58,7 +59,12 @@ cmd_help () {
   echo "  stop        Stop tracking time for the current project/task"
   echo "  print       Print work history"
   echo "  help, -h    Show this help message"
+  echo "  ENTER key   Exit Help or Print display"
 
+  read input
+  if [[ $input == "" ]]; then
+      return
+  fi
 }
 
 # prints time log
