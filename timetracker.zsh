@@ -180,16 +180,20 @@ cmd_quit () {
 ## TIMETRACKER SCRIPT RUN
 
 # declarations
-script_dir="$(dirname "$0")"
-# echo "directory: $script_dir ${script_dir}/config.txt"
-CSV_FILE=${script_dir}/timetracker.csv
+
+# gets absolute file path
+script_path="$(readlink -f "$0")"
+script_dir="$(dirname "$script_path")"
+# Construct the path to the CSV file
+CSV_FILE="${script_dir}/timetracker.csv"
+
 declare -A project_current
 project_current=(prj_name "" task "" start_time "" stop_time "" break_times "")
 highest_index=0
 
 # initial functions
 load_csv
-clear
+# clear
 echo "<- \U10348 TIMETRACKER \U10348 ->"
 echo "To set a project, use -p PROJECT. For help, type -H"
 

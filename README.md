@@ -8,13 +8,14 @@ A simple command-line utility for tracking time spent on different projects. It 
 git clone https://github.com/danraskin/zsh-timetracker.git
 
 # navigate to file directory
-cd /path/to/cloned/repo/
+cd ~/path/timetracker/
 
 # make timetracker executable
 chmod +x timetracker.zsh
 
+# to run timetracker from any file location,
 # create symlink in a PATH directory using absolute filepath to timetracker.zsh from ROOT
-ln -s /full/path/to/cloned/repo/timetracker.zsh /usr/local/bin/timetracker
+ln -s /root/path/to/timetracker/timetracker.zsh /usr/local/bin/timetracker
 
 ```
 
