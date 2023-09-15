@@ -20,7 +20,7 @@ load_csv () {
     echo "index,date,project,task,start_time,stop_time" > "$CSV_FILE"
   fi
 
-  # sets index
+  # sets index. index provides no real function anymore.
   tail -n +2 "$CSV_FILE" | while IFS=, read -r index date; do
     if  [[ (( index > highest_index )) ]] ; then
       highest_index=$index
@@ -97,6 +97,8 @@ cmd_print () {
     fi
   done
 
+  printf "                <- \U10348 TIMETRACKER \U10348 ->\n"
+  printf "-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-\n"
   # Print table header
   printf "%-20s | %-20s | %-10s\n" "Project" "Task" "Time"
   printf "---------------------|----------------------|----------\n"
@@ -114,6 +116,12 @@ cmd_print () {
   printf "---------------------|----------------------|----------\n"
   printf "%-43s | %02dh:%02dm\n" "Total Project Time" $((total_project_time / 3600)) $((total_project_time % 3600 / 60)) 
   printf "--------------------------------------------------------\n"
+  
+  read input
+  if [[ $input == "" ]]; then
+      return
+  fi
+  
 }
 
 # user input sets project and task
@@ -127,24 +135,24 @@ cmd_set_proj () {
     -p)
       project_current[task]=""
       project_current[prj_name]=$args[2]
-      echo "To begin tracking $project_current[prj_name], enter 'start'"
+      prompt_text="To begin tracking $project_current[prj_name], enter 'start'"
     ;;
     -t)
       if [[ -n $project_current[prj_name] ]]; then
         project_current[task]=$args[2]
-        echo "To begin tracking $project_current[prj_name], enter 'start'"
+        prompt_text="To begin tracking $project_current[prj_name], enter 'start'"
       else
-        echo "Set a project"
+        prompt_text="Set a project"
         return
       fi
     ;;
     -pt)
       project_current[prj_name]=$args[2]
       project_current[task]=$args[3]
-      echo "To begin tracking $project_current[prj_name], enter 'start'"
+      prompt_text="To begin tracking $project_current[prj_name], enter 'start'"
     ;;
     *)
-      echo "Invalid tag"
+      prompt_text="Invalid tag"
     ;;
   esac
 }
@@ -153,11 +161,11 @@ cmd_start () {
   if [[ (-n $project_current[prj_name]) && (-z $project_current[start_time]) ]]; then
     start_time=$(date -u +%s)
     project_current[start_time]=$start_time
-    echo "To stop tracking project_current[prj_name], enter 'stop'"
+    prompt_text="To stop tracking project_current[prj_name], enter 'stop'"
   elif [[ -n $project_current[start_time] ]]; then
-    echo "$project_current[prj_name] is already being tracked"
+    prompt_text="$project_current[prj_name] is already being tracked"
   elif [[ -z $project_current[prj_name] ]]; then
-    echo "No project has been chosen"
+    prompt_text="No project has been chosen"
   fi
 }
 
@@ -165,10 +173,10 @@ cmd_stop () {
   if [[ (-n $project_current[start_time]) ]]; then
     stop_time=$(date -u +%s)
     project_current[stop_time]=$stop_time
-    echo "To begin tracking $project_current[prj_name], enter 'start'"
+    prompt_text="To begin tracking $project_current[prj_name], enter 'start'"
     write_csv_data
   else
-    echo "$project_current[prj_name] is not being tracked"
+    prompt_text="$project_current[prj_name] is not being tracked"
   fi
 }
 
@@ -179,27 +187,28 @@ cmd_quit () {
 
 ## TIMETRACKER SCRIPT RUN
 
+clear
+
 # declarations
 
-# gets absolute file path
+# get absolute file path and set path to CSV file
 script_path="$(readlink -f "$0")"
 script_dir="$(dirname "$script_path")"
-# Construct the path to the CSV file
 CSV_FILE="${script_dir}/timetracker.csv"
 
-declare -A project_current
-project_current=(prj_name "" task "" start_time "" stop_time "" break_times "")
-highest_index=0
+header="                <- \U10348 TIMETRACKER \U10348 ->\n-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-"
+prompt_text="To set a project, use -p PROJECT. For help, type -H"
+declare -A project_current=(prj_name "" task "" start_time "" stop_time "" break_times "")
+highest_index=0 #index provides no real function anymore
 
 # initial functions
-load_csv
-clear
-echo "<- \U10348 TIMETRACKER \U10348 ->"
-echo "To set a project, use -p PROJECT. For help, type -H"
+load_csv 
 
 # Process user commands
 while true; do
-
+  clear
+  echo $header
+  echo $prompt_text
   set_prompt
   read command
 
