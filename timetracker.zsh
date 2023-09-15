@@ -50,16 +50,17 @@ set_prompt () {
 cmd_help () {
   echo "Timetracker \U10348 -> A simple time tracking script"
   echo "-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-"
-  echo "Usage: timetracker [OPTIONS]"
+  echo "Usage: timetracker\n       \U10348 -> [OPTIONS]"
   echo "Options:"
-  echo "  -p PROJECT  Start tracking a project"
-  echo "  -t TASK     Start tracking a task (must be used with -p)"
-  echo "  -pt PROJECT Start tracking a project and task"
-  echo "  start       Start tracking time for the current project/task"
-  echo "  stop        Stop tracking time for the current project/task"
-  echo "  print       Print work history"
-  echo "  help, -h    Show this help message"
-  echo "  ENTER key   Exit Help or Print display"
+  echo "  -p PROJECT       Start tracking a project"
+  echo "  -t TASK          Start tracking a task (must be used with -p)"
+  echo "  -pt PROJECT      Start tracking a project and task"
+  echo "  start            Start tracking time for the current project/task"
+  echo "  stop             Stop tracking time for the current project/task"
+  echo "  print [PROJECT]  Display project work history"
+  echo "  help, -h         Display this help message"
+  echo "  quit, q, -q      Exit Timetracker"
+  echo "  Enter            Exit print or help display"
 
   read input
   if [[ $input == "" ]]; then
@@ -103,7 +104,7 @@ cmd_print () {
     fi
   done
 
-  printf "                <- \U10348 TIMETRACKER \U10348 ->\n"
+  printf "                 <- \U10348 TIMETRACKER \U10348 ->\n"
   printf "-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-\n"
   # Print table header
   printf "%-20s | %-20s | %-10s\n" "Project" "Task" "Time"
@@ -202,7 +203,7 @@ script_path="$(readlink -f "$0")"
 script_dir="$(dirname "$script_path")"
 CSV_FILE="${script_dir}/timetracker.csv"
 
-header="                <- \U10348 TIMETRACKER \U10348 ->\n-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-"
+header="                 <- \U10348 TIMETRACKER \U10348 ->\n-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-"
 prompt_text="To set a project, use -p PROJECT. For help, type -H"
 declare -A project_current=(prj_name "" task "" start_time "" stop_time "" break_times "")
 highest_index=0 #index provides no real function anymore
@@ -219,7 +220,7 @@ while true; do
   read command
 
   case $command in
-    "quit")
+    "quit" || "-q" || "q")
       cmd_quit
     ;;
     "-p "* || "-t "* || "-pt "* )
@@ -246,5 +247,5 @@ while true; do
       echo "invalid input"
     ;;
   esac
-  
+
 done
